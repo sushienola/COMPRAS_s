@@ -61,11 +61,11 @@
 
 <div id="startScreen">
   <div class="header">
-    <h1>🍣 Sistema de Contagem de Estoque <span class="week-badge">SEMANAL</span></h1>
-    <p>Contagem semanal de inventário — Estoque Sushi</p>
+    <h1>🍣 Sistema de Contagem de Estoque <span class="week-badge">DE COMPRAS</span></h1>
+    <p>Contagem DE COMPRAS de inventário — Estoque Sushi</p>
   </div>
   <div class="start-screen">
-    <h2>Iniciar Nova Contagem Semanal</h2>
+    <h2>Iniciar Nova Contagem DE COMPRAS</h2>
     <div class="form-group">
       <label>Nome do Responsável</label>
       <input type="text" id="responsible" placeholder="Digite seu nome completo" />
@@ -80,7 +80,7 @@
 
 <div id="mainApp" class="hidden">
   <div class="header">
-    <h1>🍣 Contagem Semanal — Estoque Sushi</h1>
+    <h1>🍣 Contagem DE COMPRAS — Estoque Sushi</h1>
     <p>Preencha as quantidades de cada item</p>
   </div>
   <div class="info-bar">
@@ -312,7 +312,7 @@ function updateProgress() {
 
 function buildMirrorText() {
   const d = new Date(countDate + 'T00:00:00');
-  let txt = `ESPELHO DE CONTAGEM SEMANAL DE ESTOQUE\n================================\nSetor: ${SETOR_NOME}\nResponsavel: ${responsible}\nData: ${d.toLocaleDateString('pt-BR')}\n================================\n\n`;
+  let txt = `ESPELHO DE CONTAGEM DE COMPRAS DE ESTOQUE\n================================\nSetor: ${SETOR_NOME}\nResponsavel: ${responsible}\nData: ${d.toLocaleDateString('pt-BR')}\n================================\n\n`;
   categorias.forEach((cat, ci) => {
     let catHasItems = false;
     let catTxt = `[${cat.cat}]\n`;
@@ -349,7 +349,7 @@ function sendWhatsApp() {
 
 function downloadExcel() {
   const wb = XLSX.utils.book_new();
-  const rows = [['CONTAGEM SEMANAL DE ESTOQUE \u2014 ' + SETOR_NOME],['Responsavel:', responsible, 'Data:', new Date(countDate+'T00:00:00').toLocaleDateString('pt-BR')],[]];
+  const rows = [['CONTAGEM DE COMPRAS DE ESTOQUE \u2014 ' + SETOR_NOME],['Responsavel:', responsible, 'Data:', new Date(countDate+'T00:00:00').toLocaleDateString('pt-BR')],[]];
   rows.push(['CATEGORIA','PRODUTO','UNIDADE','QTD']);
   categorias.forEach((cat, ci) => {
     cat.items.forEach((item, ii) => {
@@ -361,7 +361,7 @@ function downloadExcel() {
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws['!cols'] = [{wch:35},{wch:45},{wch:10},{wch:12}];
   XLSX.utils.book_append_sheet(wb, ws, 'ESTOQUE SUSHI');
-  XLSX.writeFile(wb, `Contagem_Semanal_Sushi_${countDate.replace(/-/g,'')}.xlsx`);
+  XLSX.writeFile(wb, `Contagem_DE COMPRAS_Sushi_${countDate.replace(/-/g,'')}.xlsx`);
 }
 
 function clearAll() {
@@ -412,7 +412,7 @@ async function enviarContagem() {
     responsavel: responsible,
     data: countDate,
     enviadoEm: new Date().toISOString(),
-    tipo: 'semanal',
+    tipo: 'DE COMPRAS',
     items: rows
   };
 
