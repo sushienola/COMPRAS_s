@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>compras — Sushi</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #fdf1f1; color: #1a1a1a; }
+  .header { background: linear-gradient(135deg, #7f1d1d, #450a0a); color: white; padding: 24px 32px; }
+  .header h1 { font-size: 24px; font-weight: 700; }
+  .header p { font-size: 13px; color: #fca5a5; margin-top: 4px; }
+  .start-screen { max-width: 520px; margin: 60px auto; background: white; border-radius: 16px; padding: 40px; box-shadow: 0 4px 24px rgba(0,0,0,0.1); border-top: 6px solid #b91c1c; }
+  .start-screen h2 { font-size: 20px; margin-bottom: 24px; color: #7f1d1d; }
+  .form-group { margin-bottom: 18px; }
+  .form-group label { display: block; font-size: 13px; font-weight: 600; color: #4a5568; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-group input { width: 100%; padding: 12px 16px; border: 2px solid #fecaca; border-radius: 8px; font-size: 15px; transition: border-color 0.2s; }
+  .form-group input:focus { outline: none; border-color: #ef4444; }
+  .content { max-width: 900px; margin: 0 auto; padding: 20px 16px; padding-bottom: 90px; }
+  .category-block { background: white; border-radius: 12px; margin-bottom: 16px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,0.07); }
+  .category-header { background: #b91c1c; color: white; padding: 12px 20px; font-weight: 700; font-size: 14px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
+  .category-header .toggle { font-size: 18px; }
+  .category-header .count-badge { background: rgba(255,255,255,0.25); border-radius: 20px; padding: 2px 10px; font-size: 12px; }
+  .items-table { width: 100%; border-collapse: collapse; }
+  .items-table thead th { background: #fee2e2; padding: 10px 16px; text-align: left; font-size: 12px; font-weight: 700; color: #7f1d1d; text-transform: uppercase; letter-spacing: 0.4px; }
+  .items-table tbody tr { border-bottom: 1px solid #f5f5f5; transition: background 0.1s; }
+  .items-table tbody tr:hover { background: #fff5f5; }
+  .items-table td { padding: 10px 16px; font-size: 14px; }
+  .items-table td.unid { color: #a0a0a0; font-size: 12px; font-weight: 600; }
+  .qty-input { width: 90px; padding: 6px 10px; border: 2px solid #fecaca; border-radius: 6px; font-size: 14px; text-align: center; transition: border-color 0.2s; }
+  .qty-input:focus { outline: none; border-color: #ef4444; background: #fef2f2; }
+  .qty-input.filled { border-color: #dc2626; background: #fff1f1; }
+  .sticky-footer { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 2px solid #fecaca; padding: 12px 24px; display: flex; gap: 12px; justify-content: center; z-index: 200; box-shadow: 0 -4px 12px rgba(0,0,0,0.1); flex-wrap: wrap; }
+  .btn { padding: 11px 24px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .btn-success { background: #b91c1c; color: white; }
+  .btn-success:hover { background: #7f1d1d; }
+  .btn-warning { background: #c2410c; color: white; }
+  .btn-warning:hover { background: #9a3412; }
+  .btn-start { width: 100%; padding: 14px; background: linear-gradient(135deg, #b91c1c, #7f1d1d); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 8px; }
+  .btn-start:hover { opacity: 0.95; transform: translateY(-1px); }
+  .progress-bar { height: 4px; background: #fee2e2; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #ef4444, #7f1d1d); transition: width 0.3s; }
+  .info-bar { background: #fef2f2; padding: 8px 20px; font-size: 13px; color: #b91c1c; display: flex; gap: 20px; align-items: center; border-bottom: 1px solid #fecaca; flex-wrap: wrap; }
+  .info-bar strong { color: #7f1d1d; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 20px; }
+  .modal { background: white; border-radius: 16px; width: 100%; max-width: 680px; max-height: 85vh; overflow-y: auto; }
+  .modal-header { background: #7f1d1d; color: white; padding: 20px 24px; border-radius: 16px 16px 0 0; }
+  .modal-header h3 { font-size: 18px; }
+  .modal-header p { font-size: 12px; color: #fca5a5; margin-top: 4px; }
+  .modal-body { padding: 20px 24px; }
+  .mirror-text { font-family: monospace; font-size: 13px; white-space: pre-wrap; background: #fff5f5; padding: 16px; border-radius: 8px; border: 1px solid #fecaca; max-height: 300px; overflow-y: auto; line-height: 1.6; }
+  .modal-footer { padding: 16px 24px; border-top: 1px solid #fecaca; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+  .whatsapp-btn { background: #25D366; color: white; padding: 11px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+  .whatsapp-btn:hover { background: #128C7E; }
+  .hidden { display: none !important; }
+  .week-badge { display:inline-block; background:#fecaca; color:#7f1d1d; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; margin-left:8px; vertical-align:middle; }
+</style>
+</head>
+<body>
+
+<div id="startScreen">
+  <div class="header">
+    <h1>🍣 Sistema de Contagem de Estoque <span class="week-badge">SEMANAL</span></h1>
+    <p>Contagem semanal de inventário — Estoque Sushi</p>
+  </div>
+  <div class="start-screen">
+    <h2>Iniciar Nova Contagem Semanal</h2>
+    <div class="form-group">
+      <label>Nome do Responsável</label>
+      <input type="text" id="responsible" placeholder="Digite seu nome completo" />
+    </div>
+    <div class="form-group">
+      <label>Data da Contagem</label>
+      <input type="date" id="countDate" />
+    </div>
+    <button class="btn-start" onclick="startCount()">Iniciar Contagem →</button>
+  </div>
+</div>
+
+<div id="mainApp" class="hidden">
+  <div class="header">
+    <h1>🍣 Contagem Semanal — Estoque Sushi</h1>
+    <p>Preencha as quantidades de cada item</p>
+  </div>
+  <div class="info-bar">
+    <span>👤 Responsável: <strong id="infoResp"></strong></span>
+    <span>📅 Data: <strong id="infoDate"></strong></span>
+    <span id="infoProgress" style="margin-left:auto"></span>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  <div id="sections"></div>
+  <div class="sticky-footer">
+    <button class="btn btn-warning" onclick="clearAll()">🗑 Limpar Tudo</button>
+    <button class="btn btn-success" onclick="enviarContagem()" style="font-size:16px;padding:13px 32px;">📤 ENVIAR PARA PLANILHA</button>
+  </div>
+</div>
+
+<div id="mirrorModal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📋 Espelho da Contagem</h3>
+      <p>Revisão antes de enviar</p>
+    </div>
+    <div class="modal-body">
+      <div class="mirror-text" id="mirrorContent"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" style="background:#fee2e2;color:#7f1d1d" onclick="closeMirror()">Fechar</button>
+      <button class="btn btn-success" onclick="downloadExcel()">📥 Baixar Excel</button>
+      <button class="whatsapp-btn" onclick="sendWhatsApp()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Enviar no WhatsApp
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const PHONE = "5521959429920";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzfPmO5EipR4WagRzjCERiQr3OeC-gL1HH9bMkEQvaV2_raHjSz_ZB9n1QtiMRbU5Vk/exec";
+const SETOR_NOME = "ESTOQUE SUSHI";
+const SITE_LINK = "XXXXX.COM"; // TODO: trocar pelo link do site quando estiver pronto
+
+// -------- Categorias e itens (extraídos da Pasta2.xlsx) --------
+const categorias = [
+  { cat: 'ALIMENTOS AVES E FRANGO', items: [
+    {name:'FILE DE FRANGO',unid:'KG'},{name:'FOIE GRAS',unid:'KG'}
+  ]},
+  { cat: 'ALIMENTOS MOLHOS E CONSERVAS', items: [
+    {name:'SHOYO KIKKOMAN',unid:'LT'},{name:'MOLHO HOISIN',unid:'LT'},{name:'TINTA DE LULA',unid:''},{name:'PIMENTA DE TABASCO',unid:'LT'},
+    {name:'PIMENTA TOBAN',unid:'KG'},{name:'TEMPERO SHAOSING/ vinho chines',unid:'LT'},{name:'SHOYO LIGHT',unid:'LT'},{name:'MILHO EM LATA',unid:'KG'},
+    {name:'MOLHO DE PIMENTA SRIRACHA',unid:'LT'},{name:'MOLHO INGLES TONKATSU',unid:'LT'},{name:'LICHIA EM CALDA',unid:'UN'},{name:'MOLHO BARBECUE',unid:'KG'},
+    {name:'TAHINE',unid:'KG'},{name:'SHOYO YAMASA',unid:'LT'},{name:'MOLHO SHOYO DE COCO',unid:'LT'},{name:'MOLHO DE OSTRA',unid:'LT'}
+  ]},
+  { cat: 'ALIMENTOS AZEITES OLEOS E VINAGRES', items: [
+    {name:'AZEITE TRUFADO',unid:'LT'},{name:'OLEO DE COCO',unid:'LT'},{name:'VINAGRE DE MACA',unid:'LT'},{name:'AZEITE EXTRA VIRGEM',unid:'LT'},
+    {name:'SAKE KIRIN COMUM',unid:'LT'},{name:'VINHO TINTO COZINHA 5L',unid:'GF'},{name:'ACETO BALSAMICO',unid:'LT'},{name:'OLEO DE SOJA',unid:'LT'},
+    {name:'VINAGRE DE ARROZ',unid:'LT'},{name:'VINHO PORTO ROYAL',unid:'GF'},{name:'OLEO DE GIRASSOL',unid:'LT'},{name:'SK MIRIN',unid:'LT'},
+    {name:'OLEO DE GERGELIM',unid:'LT'}
+  ]},
+  { cat: 'ALIMENTOS ORIENTAL', items: [
+    {name:'MISSO',unid:'KG'},{name:'UMEBOSHI',unid:'KG'},{name:'KATSUOBUSHI',unid:'KG'},{name:'PIMENTA SRIRACHA CHILI',unid:'KG'},
+    {name:'HONDASHI',unid:'KG'},{name:'WASSABI',unid:'KG'}
+  ]},
+  { cat: 'ALIMENTOS TEMPEROS E CONDIMENTOS', items: [
+    {name:'PASTA DE SOJA',unid:'KG'},{name:'PIMENTA TOGARASHI',unid:'KG'},{name:'MOSTARDA DIJON',unid:'KG'},{name:'PAPRICA DEFUMADA',unid:'KG'},
+    {name:'CEBOLA EM PO',unid:'KG'},{name:'PASTA DE CAMARAO',unid:'KG'},{name:'PASTA DE PIMENTA',unid:'KG'},{name:'KETCHUP',unid:'LT'},
+    {name:'PIMENTA DO REINO',unid:'KG'},{name:'PASTA DE CURRY AMARELO',unid:'KG'},{name:'PAPRICA DOCE',unid:'KG'},{name:'TEMPERO DE PEIXE / NAMPLA',unid:'KG'},
+    {name:'PIMENTA BIQUINHO',unid:'KG'},{name:'PIMENTA DE CHEIRO',unid:'KG'},{name:'ALHO EM PO',unid:'KG'},{name:'PAPRICA PICANTE',unid:'KG'},
+    {name:'MOSTARDA AMARELA',unid:'KG'}
+  ]},
+  { cat: 'ALIMENTOS INSUMOS SECOS', items: [
+    {name:'CANELA EM PAU',unid:'KG'},{name:'FURIKAKE',unid:'KG'},{name:'ALGA KOMBU',unid:'KG'},{name:'MANTEIGA DE CACAU',unid:'KG'},
+    {name:'FLOCOS DE ARROZ',unid:'KG'},{name:'CORANTE VERMELHO',unid:'KG'},{name:'COLORAU',unid:'KG'},{name:'SAL GROSSO',unid:'KG'},
+    {name:'AMENDOAS FATIADAS',unid:'KG'},{name:'GERGELIM BRANCO',unid:'KG'},{name:'FLOR DE SAL',unid:'KG'},{name:'GLUTAMATO MONOSSODICO',unid:'KG'},
+    {name:'ALGA NORI',unid:'UN'},{name:'COCO RALADO',unid:'KG'},{name:'CHIMICHURRI',unid:'KG'},{name:'GERGELIM PRETO',unid:'KG'},
+    {name:'GELEIA DE PIMENTA / SWEET CHILLI',unid:'KG'},{name:'ACAFRAO',unid:'KG'},{name:'GENGIBRE EM PO',unid:'KG'},{name:'QUINOA',unid:'KG'},
+    {name:'BISCOITO ERVILHA C WASSABI',unid:'KG'},{name:'MAIZENA',unid:'KG'},{name:'CORANTE AMARELO',unid:'KG'},{name:'AMENDOIM',unid:'KG'},
+    {name:'ALGA WAKAME',unid:'KG'},{name:'MILHO DE PIPOCA',unid:'KG'},{name:'SAL REFINADO',unid:'KG'},{name:'CASTANHA CAJU CRUA',unid:'KG'},
+    {name:'CURRY',unid:'KG'}
+  ]},
+  { cat: 'ALIMENTOS FRUTOS DO MAR', items: [
+    {name:'OVAS DE MASSAGO BLACK',unid:'KG'},{name:'CAMARAO 11 15 VG',unid:'UN'},{name:'OVAS DE MASSAGO LARANJA',unid:'KG'},{name:'CENTOLLA KING KRAB',unid:'KG'},
+    {name:'OURICO',unid:'KG'},{name:'KANI',unid:'KG'},{name:'LAGOSTIM',unid:'KG'},{name:'CAMARAO 61 70',unid:'KG'},
+    {name:'CAMARAO VM 26 30',unid:'KG'},{name:'SIRI',unid:'KG'},{name:'VIEIRAS',unid:'UN'},{name:'OVAS DE SALMAO IKURA',unid:'KG'},
+    {name:'POLVO',unid:'KG'}
+  ]},
+  { cat: 'ALIMENTOS LATICINIOS', items: [
+    {name:'MAIONESE',unid:'KG'},{name:'LEITE DE COCO',unid:'LT'},{name:'CREME DE LEITE FRESCO',unid:'LT'},{name:'MANTEIGA SEM SAL',unid:'KG'},
+    {name:'CREME DE LEITE PASTEURIZADO',unid:'KG'},{name:'QUEIJO CATUPIRY',unid:'KG'},{name:'MARGARINA',unid:'KG'},{name:'CREAM CHEESE',unid:'KG'},
+    {name:'MANTEIGA DE TRUFA',unid:'KG'},{name:'LEITE INTEGRAL',unid:'LT'},{name:'QUEIJO MUSSARELA',unid:'KG'}
+  ]},
+  { cat: 'ALIMENTOS SOBREMESAS', items: [
+    {name:'BISCOITO DE CANELA',unid:'UN'},{name:'MOCHI NUTELA',unid:''},{name:'MOCHI DOCE DE LEITE',unid:''},{name:'MOCHI LICHIA',unid:''},
+    {name:'MOCHI DE CHA VERDE',unid:''},{name:'GELATINA EM FOLHA',unid:'KG'},{name:'CHOCOLATE MEIO AMARGO',unid:'KG'},{name:'TRUFAS DE CHOCOLATE',unid:'UN'},
+    {name:'CHOCOLATE BRANCO',unid:'KG'},{name:'LEITE CONDENSADO',unid:'KG'},{name:'BALA DE COCO',unid:'UN'},{name:'DOCE DE LEITE',unid:'KG'},
+    {name:'BISCOITO MARIA',unid:'KG'}
+  ]},
+  { cat: 'ALIMENTOS ARROZ E FARINHA', items: [
+    {name:'FARINHA DE ROSCA',unid:'KG'},{name:'ARROZ JAPONES',unid:'KG'},{name:'FERMENTO BIOLOGICO',unid:'KG'},{name:'FARINHA DE TRIGO PARA PASTEL',unid:'KG'},
+    {name:'FARINHA DE AMENDOA',unid:'KG'},{name:'AMIDO DE MILHO',unid:'KG'},{name:'FERMENTO EM PO',unid:'KG'},{name:'FARINHA DE TRIGO COMUM',unid:'KG'},
+    {name:'FARINHA PANKO',unid:'KG'}
+  ]},
+  { cat: 'ALIMENTOS SORVETE / CONGELADOS', items: [
+    {name:'SORVETE VANILA',unid:'LT'},{name:'SORVETE TAPIOCA',unid:'LT'},{name:'SORVETE QUEIJO',unid:'LT'},{name:'EMUSTAB SELECT',unid:'KG'},
+    {name:'EDAMAME',unid:'KG'}
+  ]},
+  { cat: 'ALIMENTOS ACUCARES ADOCANTES E MEL', items: [
+    {name:'ACUCAR GLACUCAR',unid:'KG'},{name:'ACUCAR MASCAVO',unid:'KG'},{name:'ACUCAR REFINADO',unid:'KG'},{name:'MEL',unid:'KG'},
+    {name:'NESCAU',unid:'KG'}
+  ]},
+  { cat: 'ALIMENTOS FUNCIONARIOS', items: [
+    {name:'FEIJAO - FUNCIONARIO',unid:''},{name:'LINGUICA - FUNCIONARIO',unid:''},{name:'COSTELA SUINA - FUNCIONARIO',unid:''},{name:'BUCHO BOVINO DOBRADINHA FUNCIONARIO',unid:''},
+    {name:'CREME DE LEITE FUNCIONARIOS',unid:'LT'},{name:'COXINHA DA ASA - FUNCIONARIO',unid:''},{name:'EXTRATO DE TOMATE - FUNCIONARIO',unid:''},{name:'PAO FRANCES',unid:'KG'},
+    {name:'BATATA CONGELADA - FUNCIONARIO',unid:''},{name:'BATATA PALHA - FUNCIONARIO',unid:''},{name:'FARINHA DE KIBE - FUNCIONARIO',unid:'KG'},{name:'AZEITONA VERDE - FUNCIONARIO',unid:'KG'},
+    {name:'LINGUICA TOSCANA PERNIL - FUNCIONARIO',unid:'KG'},{name:'FUBA - FUNCIONARIO',unid:''},{name:'MACARRAO - FUNCIONARIO',unid:''},{name:'CARRE - FUNCIONARIO',unid:''},
+    {name:'FILE DE PEIXE - FUNCIONARIO',unid:''},{name:'MILHO - FUNCIONARIO',unid:''},{name:'COXA E SOBRECOXA - FUNCIONARIO',unid:''},{name:'COXINHA DA ASA DRUMET FUNCIONARIO',unid:''},
+    {name:'ARROZ PARBOILIZADO - FUNCIONARIOS',unid:''},{name:'KETCHUP - FUNCIONARIO',unid:''},{name:'MOLHO DE TOMATE - FUNCIONARIO',unid:''},{name:'KIT FEIJOADA - FUNCIONARIOS',unid:''},
+    {name:'CAFE - FUNCIONARIO',unid:'KG'},{name:'SOBREPALETA SUINA - FUNCIONARIO',unid:''},{name:'FEIJAO BRANCO FUNCIONARIO',unid:''},{name:'FILE DE FRANGO - FUNCIONARIO',unid:''},
+    {name:'PRESUNTO',unid:'KG'},{name:'FLOCAO DE MILHO',unid:'KG'},{name:'PALETA BOVINA - FUNCIONARIO',unid:''},{name:'FARINHA DE MANDIOCA - FUNCIONARIO',unid:''},
+    {name:'FILE DE COXA - FUNCIONARIO',unid:''},{name:'COSTELA BOVINA - FUNCIONARIO',unid:''},{name:'SALSICHA - FUNCIONARIO',unid:''}
+  ]},
+  { cat: 'ALIMENTOS MASSAS', items: [
+    {name:'MASSA DE GUIOZA',unid:'UN'},{name:'MASSA HARUMAKI',unid:'UN'},{name:'MACARRAO HIROTANI YAKISSOBA',unid:'KG'},{name:'MASSA DE PASTEL',unid:'UN'},
+    {name:'BIFUM',unid:'KG'},{name:'MACARRAO PARA LAMEN',unid:'KG'},{name:'TORTILLA DE TRIGO',unid:'KG'},{name:'MACARRAO COM OVO',unid:'KG'},
+    {name:'MACARRAO NISSIN SPAGHETTI',unid:'KG'}
+  ]},
+  { cat: 'ALIMENTOS MASSAS - LIMPEZA E HIGIENE', items: [
+    {name:'CLORO',unid:'LT'},{name:'ALCOOL ETILICO',unid:'LT'},{name:'PAPEL TOALHA INTERFOLHADA',unid:'UN'},{name:'ALCOOL EM GEL',unid:'LT'},
+    {name:'DETERGENTE COZINHA',unid:'LT'},{name:'DESINCRUSTANTE',unid:'LT'},{name:'SACO DE LIXO 200L',unid:'UN'},{name:'SABAO EM PO',unid:'KG'},
+    {name:'ESPONJA FRIBACO',unid:'UN'},{name:'BONA SOAP',unid:'LT'},{name:'FIO DENTAL CLIENTE',unid:'UN'},{name:'AMACIANTE DE ROUPAS',unid:'LT'},
+    {name:'LUVA DESCARTAVEL',unid:'UN'},{name:'INSETICIDA',unid:'UN'},{name:'TOUCA DESCARTAVEL',unid:'UN'},{name:'AGUA SANITARIA',unid:'LT'},
+    {name:'LUSTRA MOVEIS',unid:'UN'},{name:'ALCOOL 70 LIQUIDO',unid:'LT'},{name:'ESPONJA DUPLA FACE',unid:'UN'},{name:'DESINFETANTE',unid:'LT'},
+    {name:'DIABO VERDE SODA CAUSTICA',unid:'UN'},{name:'DESENGORDURANTE',unid:'LT'},{name:'HAND BAC',unid:'LT'},{name:'LIMPADOR MULTIUSO',unid:'UN'},
+    {name:'SACO DE LIXO 100LT PRETO',unid:'UN'},{name:'PANO DE CHAO - SACO ALVEJADO',unid:''},{name:'SACO DE LIXO PRETO 40 LT 100',unid:'UN'},{name:'SACO DE LIXO 200 LT TRANSPARENTE',unid:'UN'},
+    {name:'SANITIZANTE',unid:'KG'},{name:'OLEO DE PEROBA',unid:'UN'},{name:'PERFEX ROLO',unid:'UN'},{name:'LIMPA VIDROS',unid:'UN'}
+  ]},
+  { cat: 'EMBALAGENS - VACUO', items: [
+    {name:'SACO VACUO 20X30',unid:'UN'},{name:'SACO VACUO 25X35',unid:'UN'},{name:'SACO VACUO 18X20',unid:'UN'},{name:'LUVA RETANGULAR M',unid:'UN'}
+  ]},
+  { cat: 'OPERACIONAL SALAO INSUMOS', items: [
+    {name:'PAPEL DE BATATA CHIP',unid:'UN'},{name:'ETIQUETA DE PORCIONAMENTO',unid:'UN'},{name:'STAND UP 17X25 SAQUINHO',unid:'UN'},{name:'SHOYO LIGHT SACHET',unid:'UN'},
+    {name:'ACUCAR SACHE',unid:'UN'},{name:'CANUDO BIODEGRADAVEL',unid:'UN'},{name:'ADOCANTE LIQ LINEA 75ML',unid:'UN'},{name:'ADOCANTE SACHE',unid:'UN'},
+    {name:'PAPEL HASHI CLIENTE 25',unid:'UN'},{name:'SAL SACHE',unid:'UN'},{name:'VELA DE ANIVERSARIO',unid:'UN'},{name:'BERCO DE SHOYU',unid:'UN'}
+  ]},
+  { cat: 'EMBALAGENS - PLASTICO', items: [
+    {name:'SACOLA PLASTICA REFORCADA',unid:'UN'},{name:'REDINHA 3KG PARA EMBALAGEM',unid:'UN'},{name:'POTE MOLHO DELIVERY 30 ML',unid:'UN'}
+  ]}
+];
+
+let responsible = '', countDate = '', counts = {};
+
+function startCount() {
+  responsible = document.getElementById('responsible').value.trim();
+  countDate = document.getElementById('countDate').value;
+  if (!responsible || !countDate) { alert('Por favor, preencha o nome do responsável e a data!'); return; }
+  const d = new Date(countDate + 'T00:00:00');
+  document.getElementById('infoResp').textContent = responsible;
+  document.getElementById('infoDate').textContent = d.toLocaleDateString('pt-BR');
+  document.getElementById('startScreen').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  buildSections();
+  updateProgress();
+}
+
+function buildSections() {
+  const cont = document.getElementById('sections');
+  cont.innerHTML = '';
+  const section = document.createElement('div');
+  section.className = 'content';
+  cont.appendChild(section);
+
+  categorias.forEach((cat, ci) => {
+    const block = document.createElement('div');
+    block.className = 'category-block';
+    const hdr = document.createElement('div');
+    hdr.className = 'category-header';
+    hdr.innerHTML = `<span>${cat.cat}</span><div style="display:flex;gap:10px;align-items:center"><span class="count-badge" id="badge-${ci}">0/${cat.items.length}</span><span class="toggle">\u25b2</span></div>`;
+    const body = document.createElement('div');
+    body.id = `catbody-${ci}`;
+    const table = document.createElement('table');
+    table.className = 'items-table';
+    table.innerHTML = `<thead><tr><th>PRODUTO</th><th>UNID</th><th>QTD</th></tr></thead>`;
+    const tbody = document.createElement('tbody');
+    cat.items.forEach((item, ii) => {
+      const key = `${ci}-${ii}`;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${item.name}</td><td class="unid">${item.unid||''}</td><td><input class="qty-input" type="number" id="inp-${key}" step="0.001" min="0" placeholder="0" oninput="onInput('${key}',${ci})" /></td>`;
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    body.appendChild(table);
+    block.appendChild(hdr);
+    block.appendChild(body);
+    hdr.addEventListener('click', () => {
+      const b = document.getElementById(`catbody-${ci}`);
+      const tog = hdr.querySelector('.toggle');
+      if (b.style.display === 'none') { b.style.display = ''; tog.textContent = '\u25b2'; }
+      else { b.style.display = 'none'; tog.textContent = '\u25bc'; }
+    });
+    section.appendChild(block);
+  });
+}
+
+function onInput(key, ci) {
+  const inp = document.getElementById(`inp-${key}`);
+  const val = inp.value;
+  counts[key] = val;
+  inp.classList.toggle('filled', val !== '' && parseFloat(val) > 0);
+  const cat = categorias[ci];
+  let filled = 0;
+  cat.items.forEach((_, ii) => { const v = counts[`${ci}-${ii}`]; if (v && parseFloat(v) > 0) filled++; });
+  const badge = document.getElementById(`badge-${ci}`);
+  if (badge) badge.textContent = `${filled}/${cat.items.length}`;
+  updateProgress();
+}
+
+function updateProgress() {
+  let total = 0, filled = 0;
+  categorias.forEach((cat, ci) => {
+    cat.items.forEach((_, ii) => {
+      total++;
+      const v = counts[`${ci}-${ii}`];
+      if (v && parseFloat(v) > 0) filled++;
+    });
+  });
+  const pct = total ? Math.round(filled/total*100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('infoProgress').textContent = `${filled}/${total} itens preenchidos (${pct}%)`;
+}
+
+function buildMirrorText() {
+  const d = new Date(countDate + 'T00:00:00');
+  let txt = `ESPELHO DE CONTAGEM SEMANAL DE ESTOQUE\n================================\nSetor: ${SETOR_NOME}\nResponsavel: ${responsible}\nData: ${d.toLocaleDateString('pt-BR')}\n================================\n\n`;
+  categorias.forEach((cat, ci) => {
+    let catHasItems = false;
+    let catTxt = `[${cat.cat}]\n`;
+    cat.items.forEach((item, ii) => {
+      const v = counts[`${ci}-${ii}`];
+      const hasV = v && parseFloat(v) > 0;
+      if (hasV) {
+        catHasItems = true;
+        catTxt += `  ${item.name} | ${item.unid||''} | ${v}\n`;
+      }
+    });
+    if (catHasItems) txt += catTxt + '\n';
+  });
+  txt += `================================\nFim da contagem`;
+  return txt;
+}
+
+function closeMirror() { document.getElementById('mirrorModal').classList.add('hidden'); }
+
+function sendWhatsApp() {
+  const msg = buildMirrorText();
+  const encoded = encodeURIComponent(msg);
+  const url = `https://api.whatsapp.com/send?phone=${PHONE}&text=${encoded}`;
+  try { navigator.clipboard.writeText(msg); } catch(e) {
+    try { const ta = document.createElement('textarea'); ta.value = msg; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); } catch(e2) {}
+  }
+  const old = document.getElementById('waOverlay'); if (old) old.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'waOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = `<div style="background:white;border-radius:20px;padding:36px 32px;max-width:480px;width:100%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.4);"><div style="font-size:56px;margin-bottom:12px;">📲</div><h2 style="font-size:20px;color:#7f1d1d;margin-bottom:8px;">Mensagem copiada!</h2><p style="color:#718096;font-size:14px;margin-bottom:24px;">Clique no botão verde para abrir o WhatsApp.<br>A mensagem já está copiada — só confirmar o envio.</p><a href="${url}" target="_blank" rel="noopener noreferrer" style="display:block;background:#25D366;color:white;text-decoration:none;padding:18px 24px;border-radius:12px;font-size:18px;font-weight:700;margin-bottom:12px;" onclick="document.getElementById('waOverlay').remove()">✅ ABRIR WHATSAPP AGORA</a><button onclick="document.getElementById('waOverlay').remove()" style="background:none;border:none;color:#a0aec0;font-size:13px;cursor:pointer;padding:8px;margin-top:4px;">Fechar</button></div>`;
+  document.body.appendChild(overlay);
+}
+
+function downloadExcel() {
+  const wb = XLSX.utils.book_new();
+  const rows = [['CONTAGEM SEMANAL DE ESTOQUE \u2014 ' + SETOR_NOME],['Responsavel:', responsible, 'Data:', new Date(countDate+'T00:00:00').toLocaleDateString('pt-BR')],[]];
+  rows.push(['CATEGORIA','PRODUTO','UNIDADE','QTD']);
+  categorias.forEach((cat, ci) => {
+    cat.items.forEach((item, ii) => {
+      const v = counts[`${ci}-${ii}`] || '';
+      const qty = v !== '' ? parseFloat(v) : '';
+      rows.push([cat.cat, item.name, item.unid||'', qty]);
+    });
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:35},{wch:45},{wch:10},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, ws, 'ESTOQUE SUSHI');
+  XLSX.writeFile(wb, `Contagem_Semanal_Sushi_${countDate.replace(/-/g,'')}.xlsx`);
+}
+
+function clearAll() {
+  if (!confirm('Deseja limpar TODAS as quantidades preenchidas?')) return;
+  counts = {};
+  document.querySelectorAll('.qty-input').forEach(i => { i.value = ''; i.classList.remove('filled'); });
+  document.querySelectorAll('.count-badge').forEach(b => { const p = b.textContent.split('/'); b.textContent = `0/${p[1]}`; });
+  updateProgress();
+}
+
+function buildPayloadRows() {
+  const rows = [];
+  categorias.forEach((cat, ci) => {
+    cat.items.forEach((item, ii) => {
+      const v = counts[`${ci}-${ii}`] || '';
+      const hasV = v !== '' && parseFloat(v) > 0;
+      if (!hasV) return;
+      rows.push({
+        secao: SETOR_NOME,
+        categoria: cat.cat,
+        cod: '',
+        produto: item.name,
+        unidade: item.unid || '',
+        quantidade: parseFloat(v)
+      });
+    });
+  });
+  return rows;
+}
+
+function pad2(n){ return String(n).padStart(2,'0'); }
+
+function buildShortMsg() {
+  const agora = new Date();
+  const dataStr = pad2(agora.getDate()) + '/' + pad2(agora.getMonth()+1) + '/' + agora.getFullYear();
+  const horaStr = pad2(agora.getHours()) + ':' + pad2(agora.getMinutes());
+  return `CONTAGEM FEITA - VERIFIQUE O LINK: ${SITE_LINK}`;
+}
+
+async function enviarContagem() {
+  const rows = buildPayloadRows();
+  if (rows.length === 0) {
+    alert('Nenhum item preenchido para enviar.');
+    return;
+  }
+  const payload = {
+    app: 'estoque',
+    responsavel: responsible,
+    data: countDate,
+    enviadoEm: new Date().toISOString(),
+    tipo: 'semanal',
+    items: rows
+  };
+
+  const btns = document.querySelectorAll('.sticky-footer .btn');
+  btns.forEach(b => b.disabled = true);
+
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    mostrarConfirmacaoEnvio();
+  } catch (e) {
+    alert('Não foi possível enviar para a planilha. Verifique a conexão e tente novamente.');
+  } finally {
+    btns.forEach(b => b.disabled = false);
+  }
+}
+
+function mostrarConfirmacaoEnvio() {
+  const msg = buildShortMsg();
+  const encoded = encodeURIComponent(msg);
+  const url = `https://api.whatsapp.com/send?phone=${PHONE}&text=${encoded}`;
+  const old = document.getElementById('waOverlay'); if (old) old.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'waOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = `<div style="background:white;border-radius:20px;padding:36px 32px;max-width:480px;width:100%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,0.4);"><div style="font-size:56px;margin-bottom:12px;">\u2705</div><h2 style="font-size:20px;color:#7f1d1d;margin-bottom:8px;">Contagem enviada para a planilha!</h2><p style="color:#718096;font-size:14px;margin-bottom:20px;">Setor: <strong>${SETOR_NOME}</strong><br>Agora envie o aviso no WhatsApp:</p><div style="background:#fff5f5;border:1px solid #fecaca;border-radius:8px;padding:12px;font-size:13px;color:#2d3748;margin-bottom:20px;font-family:monospace;">${msg}</div><a href="${url}" target="_blank" rel="noopener noreferrer" style="display:block;background:#25D366;color:white;text-decoration:none;padding:16px 24px;border-radius:12px;font-size:17px;font-weight:700;margin-bottom:12px;" onclick="document.getElementById('waOverlay').remove()">\ud83d\udcf2 ENVIAR AVISO NO WHATSAPP</a><button onclick="document.getElementById('waOverlay').remove()" style="background:none;border:none;color:#a0aec0;font-size:13px;cursor:pointer;padding:8px;">Fechar</button></div>`;
+  document.body.appendChild(overlay);
+}
+
+document.getElementById('countDate').valueAsDate = new Date();
+</script>
+</body>
+</html>
