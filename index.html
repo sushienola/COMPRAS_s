@@ -398,7 +398,7 @@ function buildShortMsg() {
   const agora = new Date();
   const dataStr = pad2(agora.getDate()) + '/' + pad2(agora.getMonth()+1) + '/' + agora.getFullYear();
   const horaStr = pad2(agora.getHours()) + ':' + pad2(agora.getMinutes());
-  return `CONTAGEM DE GROSSOS DO SUSHI FEITA - VERIFIQUE O LINK: ${https://sushienolacompras.vercel.app/}`;
+  return `CONTAGEM DE GROSSOS DO SUSHI FEITA - VERIFIQUE O LINK: https://sushienolacompras.vercel.app/`;
 }
 
 async function enviarContagem() {
